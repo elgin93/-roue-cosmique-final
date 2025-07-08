@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roue Cosmique</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+            min-height: 100vh;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        .cosmic-glow {
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+        }
+        
+        .wheel-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #wheel {
+            transition: transform 3s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+        
+        .pointer {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #fbbf24;
+            z-index: 10;
+        }
+        
+        .form-glow {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .btn-cosmic {
+            background: linear-gradient(45deg, #8b5cf6, #a78bfa);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-cosmic:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
+        }
+        
+        .result-popup {
+            background: rgba(30, 27, 75, 0.95);
+            border: 2px solid #8b5cf6;
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+    <h1 class="text-4xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-8 text-center cosmic-glow">
+        🌌 ROUE COSMIQUE 🌌
+    </h1>
+    
+    <!-- Formulaire -->
+    <div id="form-container" class="form-glow p-6 rounded-lg mb-8 w-full max-w-md">
+        <h2 class="text-2xl font-bold text-white mb-4 text-center">Tentez votre chance !</h2>
+        <form id="participantForm" class="space-y-4">
+            <input type="text" id="prenom" placeholder="Prénom" required 
+                   class="w-full p-3 rounded-lg bg-purple-800 text-white placeholder-purple-300 border border-purple-600 focus:border-purple-400 focus:outline-none">
+            <input type="text" id="nom" placeholder="Nom" required 
+                   class="w-full p-3 rounded-lg bg-purple-800 text-white placeholder-purple-300 border border-purple-600 focus:border-purple-400 focus:outline-none">
+            <input type="email" id="email" placeholder="Email" required 
+                   class="w-full p-3 rounded-lg bg-purple-800 text-white placeholder-purple-300 border border-purple-600 focus:border-purple-400 focus:outline-none">
+            <button type="submit" class="w-full p-3 btn-cosmic text-white font-bold rounded-lg">
+                VALIDER ET JOUER
+            </button>
+        </form>
+    </div>
+    
+    <!-- Roue -->
+    <div id="wheel-section" class="hidden">
+        <div class="wheel-container mb-8">
+            <div class="pointer"></div>
+            <canvas id="wheel" width="400" height="400" class="cosmic-glow rounded-full"></canvas>
+        </div>
+        
+        <button id="spinBtn" class="btn-cosmic text-white font-bold py-4 px-8 rounded-lg text-xl disabled:opacity-50 disabled:cursor-not-allowed">
+            🎯 FAIRE TOURNER LA ROUE 🎯
+        </button>
+        
+        <div id="debug" class="text-white text-center mt-4 text-sm opacity-70"></div>
+    </div>
+    
+    <!-- Popup de résultat -->
+    <div id="resultPopup" class="hidden fixed inset-0 flex items-center justify-center z-50">
+        <div class="result-popup p-8 rounded-lg text-center max-w-md mx-4">
+            <h3 id="resultTitle" class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 mb-4"></h3>
+            <p id="resultMessage" class="text-white text-lg mb-6"></p>
+            <button id="closeResult" class="btn-cosmic text-white font-bold py-2 px-6 rounded-lg">
+                FERMER
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const segments = [
+            { text: "Rien à gagner", startAngle: 0, endAngle: 147.6, color: "#6b7280", probability: 41 },
+            { text: "Réduction -5%", startAngle: 147.6, endAngle: 212.4, color: "#3b82f6", probability: 18 },
+            { text: "Réduction -10%", startAngle: 212.4, endAngle: 266.4, color: "#10b981", probability: 15 },
+            { text: "Réduction -20%", startAngle: 266.4, endAngle: 302.4, color: "#f59e0b", probability: 10 },
+            { text: "Réduction -50%", startAngle: 302.4, endAngle: 320.4, color: "#ef4444", probability: 5 },
+            { text: "ticket Party Bus", startAngle: 320.4, endAngle: 334.8, color: "#8b5cf6", probability: 4 },
+            { text: "entrer Boîte de Nuit", startAngle: 334.8, endAngle: 349.2, color: "#ec4899", probability: 4 },
+            { text: "cadeaux sur le Bateau", startAngle: 349.2, endAngle: 360, color: "#06b6d4", probability: 3 }
+        ];
+
+        let currentRotation = 0;
+        let isSpinning = false;
+        let hasSpun = false;
+        let participantData = {};
+
+        function drawWheel() {
+            const canvas = document.getElementById('wheel');
+            const ctx = canvas.getContext('2d');
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 190;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            segments.forEach((segment, index) => {
+                const startAngle = (segment.startAngle * Math.PI) / 180;
+                const endAngle = (segment.endAngle * Math.PI) / 180;
+
+                // Dessiner le segment
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = segment.color;
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Calculer l'angle du milieu pour positionner le texte
+                const midAngle = (startAngle + endAngle) / 2;
+                const textRadius = radius * 0.7;
+                const textX = centerX + Math.cos(midAngle) * textRadius;
+                const textY = centerY + Math.sin(midAngle) * textRadius;
+
+                // Dessiner le texte
+                ctx.save();
+                ctx.translate(textX, textY);
+                ctx.rotate(midAngle + Math.PI / 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // Diviser le texte en plusieurs lignes si nécessaire
+                const words = segment.text.split(' ');
+                if (words.length > 2) {
+                    ctx.fillText(words.slice(0, 2).join(' '), 0, -8);
+                    ctx.fillText(words.slice(2).join(' '), 0, 8);
+                } else if (words.length === 2) {
+                    ctx.fillText(words[0], 0, -8);
+                    ctx.fillText(words[1], 0, 8);
+                } else {
+                    ctx.fillText(segment.text, 0, 0);
+                }
+                
+                ctx.restore();
+            });
+        }
+
+        function detectSegment(angle) {
+            const normalizedAngle = ((360 - (angle % 360)) + 360) % 360;
+            
+            for (let segment of segments) {
+                if (normalizedAngle >= segment.startAngle && normalizedAngle < segment.endAngle) {
+                    return segment;
+                }
+            }
+            return segments[0];
+        }
+
+        function spinWheel() {
+            if (isSpinning || hasSpun) return;
+            
+            isSpinning = true;
+            hasSpun = true;
+            document.getElementById('spinBtn').disabled = true;
+            
+            // Génération basée sur les probabilités
+            const random = Math.random() * 100;
+            let cumulative = 0;
+            let targetSegment = segments[0];
+            
+            for (let segment of segments) {
+                cumulative += segment.probability;
+                if (random <= cumulative) {
+                    targetSegment = segment;
+                    break;
+                }
+            }
+            
+            // Calculer l'angle cible
+            const targetAngle = (targetSegment.startAngle + targetSegment.endAngle) / 2;
+            const normalizedTarget = 360 - targetAngle;
+            const spinAmount = 1440 + normalizedTarget - (currentRotation % 360);
+            
+            currentRotation += spinAmount;
+            
+            const wheel = document.getElementById('wheel');
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+            
+            setTimeout(() => {
+                const finalAngle = currentRotation % 360;
+                const result = detectSegment(finalAngle);
+                
+                document.getElementById('debug').innerHTML = 
+                    `Angle: ${finalAngle.toFixed(1)}° | Résultat: ${result.text}`;
+                
+                showResult(result);
+                sendNotification(result);
+                isSpinning = false;
+            }, 3000);
+        }
+
+        function showResult(segment) {
+            const popup = document.getElementById('resultPopup');
+            const title = document.getElementById('resultTitle');
+            const message = document.getElementById('resultMessage');
+            
+            if (segment.text === "Rien à gagner") {
+                title.textContent = "😔 Dommage !";
+                message.textContent = `Pas de chance cette fois ${participantData.prenom}, mais merci d'avoir participé !`;
+            } else {
+                title.textContent = "🎉 FÉLICITATIONS !";
+                message.textContent = `Bravo ${participantData.prenom} ! Vous avez gagné : ${segment.text}`;
+            }
+            
+            popup.classList.remove('hidden');
+        }
+
+        function sendNotification(result) {
+            const data = {
+                prenom: participantData.prenom,
+                nom: participantData.nom,
+                email: participantData.email,
+                resultat: result.text,
+                date: new Date().toLocaleString('fr-FR'),
+                ip: 'Non disponible',
+                appareil: navigator.userAgent
+            };
+
+            // Simulation d'envoi email
+            console.log('Notification envoyée vers mchergui08@gmail.com:', data);
+            
+            // Ici vous pourriez ajouter l'intégration réelle avec un service d'email
+            // ou Google Sheets selon vos besoins
+        }
+
+        // Event listeners
+        document.getElementById('participantForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            participantData = {
+                prenom: document.getElementById('prenom').value,
+                nom: document.getElementById('nom').value,
+                email: document.getElementById('email').value
+            };
+            
+            // Vérifier si déjà joué (localStorage)
+            const hasPlayed = localStorage.getItem('cosmicWheelPlayed');
+            if (hasPlayed) {
+                alert(`Vous avez déjà tenté votre chance ${participantData.prenom} ! Une seule participation par personne.`);
+                return;
+            }
+            
+            localStorage.setItem('cosmicWheelPlayed', 'true');
+            
+            document.getElementById('form-container').classList.add('hidden');
+            document.getElementById('wheel-section').classList.remove('hidden');
+            
+            // Afficher popup de bienvenue
+            setTimeout(() => {
+                alert(`Bienvenue ${participantData.prenom} ! Prêt(e) pour votre chance cosmique ? 🌟`);
+            }, 500);
+        });
+
+        document.getElementById('spinBtn').addEventListener('click', spinWheel);
+
+        document.getElementById('closeResult').addEventListener('click', function() {
+            document.getElementById('resultPopup').classList.add('hidden');
+        });
+
+        // Initialiser la roue
+        drawWheel();
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"95c24e4b8bc9acc1","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.6.2","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
+</body>
+</html>
+    <script id="html_badge_script1">
+        window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
+            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDrM4d9ww8Ujmp1KczmBs5I4GLfeOHr7VcoGMPuJP7v0OenLq0232yNmcjCHOrfipvN%2FAHZclOSjt43Rgg0dl45awrkYefiiiAn4QKfVAEujSa9LcZxrnpacr4pQIxVzsKV%2FYN1rzBByJBInyCeN3s1FnOCwek67PQdFFJhrgN8obsNdYP1ME6O%2BjkydULy7QOwQHuM7Wccmjbpdp31Dbco3n8k%2BDx7xZo%2BrmUXbhYtjMpbrgNcfkWxCf9WiA5isccdcgax0V7EEvSSjzYPU8EtXsymnjv%2BEYMMHv96w3uJAb4Cr6sMKZZDY5JyVaFp8D6KXGyvn%2B1VOf8Uxu4JPDoAqegajaAPn49yf4zRT%2B8%2BfH4QuVIlo6iH7oOUzhAtH%2BByIUMPSG0A6vWNQENvelndJZtpg1rRaP00C6Ol7E9HS6VvzeyC5mbzUvjkaisviLxDGK8k4aMlj3HmAiMypsKOvT6xAjtxoBpxJeHROcKl2t4YrEVQAKex36hO1Atv6mx7JxP61DqwU2zSakMGjbNI8%3D";
+        window.__genspark_locale = "fr-FR";
+        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDrM4d9ww8Ujmp1KczmBs5I4GLfeOHr7VcoGMPuJP7v0OenLq0232yNmcjCHOrfipvN/AHZclOSjt43Rgg0dl45awrkYefiiiAn4QKfVAEujSa9LcZxrnpacr4pQIxVzsKV/YN1rzBByJBInyCeN3s1FnOCwek67PQdFFJhrgN8obsNdYP1ME6O+jkydULy7QOwQHuM7Wccmjbpdp31Dbco3n8k+Dx7xZo+rmUXbhYtjMpbrgNcfkWxCf9WiA5isccdcgax0V7EEvSSjzYPU8EtXsymnjv+EYMMHv96w3uJAb4Cr6sMKZZDY5JyVaFp8D6KXGyvn+1VOf8Uxu4JPDoAqegajaAPn49yf4zRT+8+fH4QuVIlo6iH7oOUzhAtH+ByIUMPSG0A6vWNQENvelndJZtpg1rRaP00C6Ol7E9HS6VvzeyC5mbzUvjkaisviLxDGK8k4aMlj3HmAiMypsKOvT6xAjtxoBpxJeHROcKl2t4YrEVQAKex36hO1Atv6mx7JxP61DqwU2zSakMGjbNI8=";
+    </script>
+    
+    <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
+    
