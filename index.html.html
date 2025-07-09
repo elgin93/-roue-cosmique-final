@@ -5,29 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roue Cosmique</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <style>
         body {
-            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
-            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
             font-family: 'Arial', sans-serif;
+            min-height: 100vh;
         }
-        
-        .cosmic-glow {
-            box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+        .cosmic-container {
+            background: radial-gradient(circle at center, rgba(139, 92, 246, 0.1) 0%, rgba(0, 0, 0, 0.3) 100%);
+            border: 2px solid rgba(139, 92, 246, 0.3);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
         }
-        
         .wheel-container {
             position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            width: 350px;
+            height: 350px;
+            margin: 0 auto;
         }
-        
-        #wheel {
-            transition: transform 3s cubic-bezier(0.25, 0.1, 0.25, 1);
+        #wheelCanvas {
+            border-radius: 50%;
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
         }
-        
         .pointer {
             position: absolute;
             top: -10px;
@@ -37,102 +36,152 @@
             height: 0;
             border-left: 15px solid transparent;
             border-right: 15px solid transparent;
-            border-top: 30px solid #fbbf24;
+            border-top: 30px solid #ef4444;
             z-index: 10;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
         }
-        
-        .form-glow {
-            background: rgba(139, 92, 246, 0.1);
-            border: 1px solid rgba(139, 92, 246, 0.3);
-            backdrop-filter: blur(10px);
-        }
-        
-        .btn-cosmic {
-            background: linear-gradient(45deg, #8b5cf6, #a78bfa);
+        .spin-btn {
+            background: linear-gradient(45deg, #8b5cf6, #a855f7);
+            border: none;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 5;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
             transition: all 0.3s ease;
         }
-        
-        .btn-cosmic:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
+        .spin-btn:hover {
+            transform: translate(-50%, -50%) scale(1.05);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
         }
-        
-        .result-popup {
-            background: rgba(30, 27, 75, 0.95);
-            border: 2px solid #8b5cf6;
+        .spin-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .form-input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 10px;
+            color: white;
+            padding: 12px;
+            width: 100%;
             backdrop-filter: blur(10px);
+        }
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+        }
+        .result-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 2px solid #8b5cf6;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .debug-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 100;
         }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-4">
-    <h1 class="text-4xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-8 text-center cosmic-glow">
-        🌌 ROUE COSMIQUE 🌌
-    </h1>
-    
-    <!-- Formulaire -->
-    <div id="form-container" class="form-glow p-6 rounded-lg mb-8 w-full max-w-md">
-        <h2 class="text-2xl font-bold text-white mb-4 text-center">Tentez votre chance !</h2>
-        <form id="participantForm" class="space-y-4">
-            <input type="text" id="prenom" placeholder="Prénom" required 
-                   class="w-full p-3 rounded-lg bg-purple-800 text-white placeholder-purple-300 border border-purple-600 focus:border-purple-400 focus:outline-none">
-            <input type="text" id="nom" placeholder="Nom" required 
-                   class="w-full p-3 rounded-lg bg-purple-800 text-white placeholder-purple-300 border border-purple-600 focus:border-purple-400 focus:outline-none">
-            <input type="email" id="email" placeholder="Email" required 
-                   class="w-full p-3 rounded-lg bg-purple-800 text-white placeholder-purple-300 border border-purple-600 focus:border-purple-400 focus:outline-none">
-            <button type="submit" class="w-full p-3 btn-cosmic text-white font-bold rounded-lg">
-                VALIDER ET JOUER
-            </button>
-        </form>
-    </div>
-    
-    <!-- Roue -->
-    <div id="wheel-section" class="hidden">
-        <div class="wheel-container mb-8">
-            <div class="pointer"></div>
-            <canvas id="wheel" width="400" height="400" class="cosmic-glow rounded-full"></canvas>
+<body class="text-white">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-center mb-8 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            🌌 ROUE COSMIQUE 🌌
+        </h1>
+        
+        <div class="max-w-lg mx-auto cosmic-container p-8 mb-8">
+            <form id="playerForm" class="space-y-4">
+                <div>
+                    <input type="text" id="prenom" class="form-input" placeholder="Prénom" required>
+                </div>
+                <div>
+                    <input type="text" id="nom" class="form-input" placeholder="Nom" required>
+                </div>
+                <div>
+                    <input type="email" id="email" class="form-input" placeholder="Email" required>
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-6 rounded-lg font-bold hover:from-purple-600 hover:to-pink-600 transition duration-300">
+                    Valider
+                </button>
+            </form>
         </div>
-        
-        <button id="spinBtn" class="btn-cosmic text-white font-bold py-4 px-8 rounded-lg text-xl disabled:opacity-50 disabled:cursor-not-allowed">
-            🎯 FAIRE TOURNER LA ROUE 🎯
-        </button>
-        
-        <div id="debug" class="text-white text-center mt-4 text-sm opacity-70"></div>
-    </div>
-    
-    <!-- Popup de résultat -->
-    <div id="resultPopup" class="hidden fixed inset-0 flex items-center justify-center z-50">
-        <div class="result-popup p-8 rounded-lg text-center max-w-md mx-4">
-            <h3 id="resultTitle" class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 mb-4"></h3>
-            <p id="resultMessage" class="text-white text-lg mb-6"></p>
-            <button id="closeResult" class="btn-cosmic text-white font-bold py-2 px-6 rounded-lg">
-                FERMER
-            </button>
+
+        <div id="wheelSection" class="hidden">
+            <div class="wheel-container">
+                <div class="pointer"></div>
+                <canvas id="wheelCanvas" width="350" height="350"></canvas>
+                <button id="spinBtn" class="spin-btn">SPIN</button>
+                <div class="debug-info" id="debugInfo">
+                    Angle: 0°<br>
+                    Segment: -
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        // Configuration de la roue
         const segments = [
-            { text: "Rien à gagner", startAngle: 0, endAngle: 147.6, color: "#6b7280", probability: 41 },
-            { text: "Réduction -5%", startAngle: 147.6, endAngle: 212.4, color: "#3b82f6", probability: 18 },
-            { text: "Réduction -10%", startAngle: 212.4, endAngle: 266.4, color: "#10b981", probability: 15 },
-            { text: "Réduction -20%", startAngle: 266.4, endAngle: 302.4, color: "#f59e0b", probability: 10 },
-            { text: "Réduction -50%", startAngle: 302.4, endAngle: 320.4, color: "#ef4444", probability: 5 },
-            { text: "ticket Party Bus", startAngle: 320.4, endAngle: 334.8, color: "#8b5cf6", probability: 4 },
-            { text: "entrer Boîte de Nuit", startAngle: 334.8, endAngle: 349.2, color: "#ec4899", probability: 4 },
-            { text: "cadeaux sur le Bateau", startAngle: 349.2, endAngle: 360, color: "#06b6d4", probability: 3 }
+            { text: "Rien à gagner", color: "#6b7280", percentage: 41, startAngle: 0, endAngle: 147.6 },
+            { text: "Réduction -5%", color: "#ef4444", percentage: 18, startAngle: 147.6, endAngle: 212.4 },
+            { text: "Réduction -10%", color: "#f59e0b", percentage: 15, startAngle: 212.4, endAngle: 266.4 },
+            { text: "Réduction -20%", color: "#10b981", percentage: 10, startAngle: 266.4, endAngle: 302.4 },
+            { text: "Réduction -50%", color: "#8b5cf6", percentage: 5, startAngle: 302.4, endAngle: 320.4 },
+            { text: "ticket Party Bus", color: "#f97316", percentage: 4, startAngle: 320.4, endAngle: 334.8 },
+            { text: "entrer Boîte de Nuit", color: "#ec4899", percentage: 4, startAngle: 334.8, endAngle: 349.2 },
+            { text: "cadeaux sur le Bateau", color: "#06b6d4", percentage: 3, startAngle: 349.2, endAngle: 360.0 }
         ];
 
         let currentRotation = 0;
-        let isSpinning = false;
         let hasSpun = false;
-        let participantData = {};
+        let playerData = {};
 
+        // Dessiner la roue
         function drawWheel() {
-            const canvas = document.getElementById('wheel');
+            const canvas = document.getElementById('wheelCanvas');
             const ctx = canvas.getContext('2d');
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
-            const radius = 190;
+            const radius = 170;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -151,170 +200,201 @@
                 ctx.lineWidth = 2;
                 ctx.stroke();
 
-                // Calculer l'angle du milieu pour positionner le texte
-                const midAngle = (startAngle + endAngle) / 2;
-                const textRadius = radius * 0.7;
-                const textX = centerX + Math.cos(midAngle) * textRadius;
-                const textY = centerY + Math.sin(midAngle) * textRadius;
-
                 // Dessiner le texte
+                const midAngle = (startAngle + endAngle) / 2;
+                const textX = centerX + Math.cos(midAngle) * (radius * 0.7);
+                const textY = centerY + Math.sin(midAngle) * (radius * 0.7);
+
                 ctx.save();
                 ctx.translate(textX, textY);
-                ctx.rotate(midAngle + Math.PI / 2);
+                ctx.rotate(midAngle);
                 ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 12px Arial';
+                ctx.font = 'bold 11px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                
-                // Diviser le texte en plusieurs lignes si nécessaire
-                const words = segment.text.split(' ');
-                if (words.length > 2) {
-                    ctx.fillText(words.slice(0, 2).join(' '), 0, -8);
-                    ctx.fillText(words.slice(2).join(' '), 0, 8);
-                } else if (words.length === 2) {
-                    ctx.fillText(words[0], 0, -8);
-                    ctx.fillText(words[1], 0, 8);
-                } else {
-                    ctx.fillText(segment.text, 0, 0);
-                }
-                
+                ctx.fillText(segment.text, 0, 0);
                 ctx.restore();
             });
         }
 
+        // Détecter le segment selon l'angle
         function detectSegment(angle) {
-            const normalizedAngle = ((360 - (angle % 360)) + 360) % 360;
+            // Normaliser l'angle entre 0 et 360
+            angle = ((angle % 360) + 360) % 360;
             
             for (let segment of segments) {
-                if (normalizedAngle >= segment.startAngle && normalizedAngle < segment.endAngle) {
-                    return segment;
+                if (angle >= segment.startAngle && angle < segment.endAngle) {
+                    return segment.text;
                 }
             }
-            return segments[0];
+            return segments[0].text; // Par défaut "Rien à gagner"
         }
 
+        // Mettre à jour le debug
+        function updateDebug(angle) {
+            const normalizedAngle = ((angle % 360) + 360) % 360;
+            const segment = detectSegment(normalizedAngle);
+            document.getElementById('debugInfo').innerHTML = `
+                Angle: ${normalizedAngle.toFixed(1)}°<br>
+                Segment: ${segment}
+            `;
+        }
+
+        // Faire tourner la roue
         function spinWheel() {
-            if (isSpinning || hasSpun) return;
+            if (hasSpun) return;
             
-            isSpinning = true;
+            const canvas = document.getElementById('wheelCanvas');
+            const spinBtn = document.getElementById('spinBtn');
+            
+            spinBtn.disabled = true;
             hasSpun = true;
-            document.getElementById('spinBtn').disabled = true;
             
-            // Génération basée sur les probabilités
-            const random = Math.random() * 100;
-            let cumulative = 0;
-            let targetSegment = segments[0];
+            // Générer un angle de rotation aléatoire
+            const minRotation = 1440; // 4 tours minimum
+            const maxRotation = 2880; // 8 tours maximum
+            const finalRotation = currentRotation + minRotation + Math.random() * (maxRotation - minRotation);
             
-            for (let segment of segments) {
-                cumulative += segment.probability;
-                if (random <= cumulative) {
-                    targetSegment = segment;
-                    break;
+            // Animation de rotation
+            const duration = 3000; // 3 secondes
+            const startTime = Date.now();
+            const startRotation = currentRotation;
+            
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Fonction d'easing pour ralentir à la fin
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                currentRotation = startRotation + (finalRotation - startRotation) * easeOut;
+                
+                canvas.style.transform = `rotate(${currentRotation}deg)`;
+                updateDebug(currentRotation);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Animation terminée
+                    const finalAngle = currentRotation % 360;
+                    const result = detectSegment(finalAngle);
+                    showResult(result);
+                    sendNotification(result, finalAngle);
                 }
             }
             
-            // Calculer l'angle cible
-            const targetAngle = (targetSegment.startAngle + targetSegment.endAngle) / 2;
-            const normalizedTarget = 360 - targetAngle;
-            const spinAmount = 1440 + normalizedTarget - (currentRotation % 360);
-            
-            currentRotation += spinAmount;
-            
-            const wheel = document.getElementById('wheel');
-            wheel.style.transform = `rotate(${currentRotation}deg)`;
-            
-            setTimeout(() => {
-                const finalAngle = currentRotation % 360;
-                const result = detectSegment(finalAngle);
-                
-                document.getElementById('debug').innerHTML = 
-                    `Angle: ${finalAngle.toFixed(1)}° | Résultat: ${result.text}`;
-                
-                showResult(result);
-                sendNotification(result);
-                isSpinning = false;
-            }, 3000);
+            animate();
         }
 
-        function showResult(segment) {
-            const popup = document.getElementById('resultPopup');
-            const title = document.getElementById('resultTitle');
-            const message = document.getElementById('resultMessage');
+        // Afficher le résultat
+        function showResult(result) {
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
             
-            if (segment.text === "Rien à gagner") {
-                title.textContent = "😔 Dommage !";
-                message.textContent = `Pas de chance cette fois ${participantData.prenom}, mais merci d'avoir participé !`;
-            } else {
-                title.textContent = "🎉 FÉLICITATIONS !";
-                message.textContent = `Bravo ${participantData.prenom} ! Vous avez gagné : ${segment.text}`;
-            }
+            const popup = document.createElement('div');
+            popup.className = 'result-popup';
+            popup.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-purple-400">🎉 Résultat 🎉</h2>
+                <p class="text-xl mb-4">Félicitations ${playerData.prenom} !</p>
+                <p class="text-3xl font-bold text-yellow-400 mb-6">${result}</p>
+                <button onclick="closeResult()" class="bg-purple-500 hover:bg-purple-600 px-6 py-2 rounded-lg">
+                    Fermer
+                </button>
+            `;
             
-            popup.classList.remove('hidden');
+            document.body.appendChild(overlay);
+            document.body.appendChild(popup);
+            
+            window.closeResult = function() {
+                document.body.removeChild(overlay);
+                document.body.removeChild(popup);
+            };
         }
 
-        function sendNotification(result) {
+        // Envoyer notification
+        function sendNotification(result, angle) {
             const data = {
-                prenom: participantData.prenom,
-                nom: participantData.nom,
-                email: participantData.email,
-                resultat: result.text,
-                date: new Date().toLocaleString('fr-FR'),
-                ip: 'Non disponible',
-                appareil: navigator.userAgent
+                prenom: playerData.prenom,
+                nom: playerData.nom,
+                email: playerData.email,
+                resultat: result,
+                angle: angle.toFixed(1),
+                timestamp: new Date().toISOString(),
+                ip: 'Non disponible'
             };
 
-            // Simulation d'envoi email
-            console.log('Notification envoyée vers mchergui08@gmail.com:', data);
+            // Simulation d'envoi email (remplacez par votre service)
+            console.log('Notification envoyée:', data);
             
-            // Ici vous pourriez ajouter l'intégration réelle avec un service d'email
-            // ou Google Sheets selon vos besoins
+            // Ici vous pouvez ajouter l'intégration avec votre service d'email
+            // Par exemple: fetch('votre-api-email', { method: 'POST', body: JSON.stringify(data) })
         }
 
-        // Event listeners
-        document.getElementById('participantForm').addEventListener('submit', function(e) {
+        // Gestion du formulaire
+        document.getElementById('playerForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            participantData = {
+            playerData = {
                 prenom: document.getElementById('prenom').value,
                 nom: document.getElementById('nom').value,
                 email: document.getElementById('email').value
             };
             
             // Vérifier si déjà joué (localStorage)
-            const hasPlayed = localStorage.getItem('cosmicWheelPlayed');
-            if (hasPlayed) {
-                alert(`Vous avez déjà tenté votre chance ${participantData.prenom} ! Une seule participation par personne.`);
+            const hasAlreadyPlayed = localStorage.getItem('cosmicWheelPlayed');
+            if (hasAlreadyPlayed) {
+                alert('Vous avez déjà tenté votre chance ! Une seule participation par personne.');
                 return;
             }
             
-            localStorage.setItem('cosmicWheelPlayed', 'true');
+            // Afficher un popup de bienvenue
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
             
-            document.getElementById('form-container').classList.add('hidden');
-            document.getElementById('wheel-section').classList.remove('hidden');
+            const popup = document.createElement('div');
+            popup.className = 'result-popup';
+            popup.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-purple-400">🌟 Bienvenue ${playerData.prenom} ! 🌟</h2>
+                <p class="text-lg mb-6">Prêt(e) pour votre chance cosmique ?</p>
+                <button onclick="startGame()" class="bg-purple-500 hover:bg-purple-600 px-6 py-2 rounded-lg">
+                    C'est parti !
+                </button>
+            `;
             
-            // Afficher popup de bienvenue
-            setTimeout(() => {
-                alert(`Bienvenue ${participantData.prenom} ! Prêt(e) pour votre chance cosmique ? 🌟`);
-            }, 500);
+            document.body.appendChild(overlay);
+            document.body.appendChild(popup);
+            
+            window.startGame = function() {
+                document.body.removeChild(overlay);
+                document.body.removeChild(popup);
+                document.getElementById('playerForm').parentElement.style.display = 'none';
+                document.getElementById('wheelSection').classList.remove('hidden');
+                drawWheel();
+                updateDebug(0);
+            };
         });
 
+        // Événement de rotation
         document.getElementById('spinBtn').addEventListener('click', spinWheel);
 
-        document.getElementById('closeResult').addEventListener('click', function() {
-            document.getElementById('resultPopup').classList.add('hidden');
+        // Marquer comme joué après un spin
+        window.addEventListener('beforeunload', function() {
+            if (hasSpun) {
+                localStorage.setItem('cosmicWheelPlayed', 'true');
+            }
         });
 
-        // Initialiser la roue
+        // Initialisation
         drawWheel();
+        updateDebug(0);
     </script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"95c24e4b8bc9acc1","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.6.2","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"95c7941b4e0b697d","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.6.2","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
 </body>
 </html>
     <script id="html_badge_script1">
         window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
-            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDrM4d9ww8Ujmp1KczmBs5I4GLfeOHr7VcoGMPuJP7v0OenLq0232yNmcjCHOrfipvN%2FAHZclOSjt43Rgg0dl45awrkYefiiiAn4QKfVAEujSa9LcZxrnpacr4pQIxVzsKV%2FYN1rzBByJBInyCeN3s1FnOCwek67PQdFFJhrgN8obsNdYP1ME6O%2BjkydULy7QOwQHuM7Wccmjbpdp31Dbco3n8k%2BDx7xZo%2BrmUXbhYtjMpbrgNcfkWxCf9WiA5isccdcgax0V7EEvSSjzYPU8EtXsymnjv%2BEYMMHv96w3uJAb4Cr6sMKZZDY5JyVaFp8D6KXGyvn%2B1VOf8Uxu4JPDoAqegajaAPn49yf4zRT%2B8%2BfH4QuVIlo6iH7oOUzhAtH%2BByIUMPSG0A6vWNQENvelndJZtpg1rRaP00C6Ol7E9HS6VvzeyC5mbzUvjkaisviLxDGK8k4aMlj3HmAiMypsKOvT6xAjtxoBpxJeHROcKl2t4YrEVQAKex36hO1Atv6mx7JxP61DqwU2zSakMGjbNI8%3D";
+            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDqFK%2FF3VgzAtn7uzTOMrVQW8SWtEbstuXuabAGctFKk%2FFYYM5O%2B5z%2BcDYjta3AmdoFjrBZ0ChRbmzgsdTpKqmFQVRd3zFVrSCDQCyxhAUIzDonWgf2gMEqaphsE0fO%2BYaL7%2B7pU%2BAwO7%2FGEpXddp7IRnVWydpVgNzLeHaqmyiuaXQe35OEHzzzSKl0pu48vKc9JxotZHmDLBYSUxe%2BwSX1Qo1XO8zy0I2H6rTxkGJ7epRrh0kPWvBkwiIYZFanTNSCVDj9KCyYt9iH9a0eAIKxnBnUwtfER9QvTUiZyBYG74yNfUg0cdKorJX4%2FGxFeMnP1Pe3mcM4yMoD%2B9rsxeoTv1AzF1MBk58MoFuOWFK82419YPh6E1j1EnvRU1Zkhpj7cvKlVsOqzXX8kwQMWq3OY6Epkd2Zxj6QjuA5TpmOVvUZpilnohp9ZK4F0oAG4KZnLIFWpIJwu3GIntgsCMTy9p0S3RrwJraMKsyPhKswKOR8e90a90SfXSwzY%2BocNdZmqL5WPQGDjod38Th5XTJxs%3D";
         window.__genspark_locale = "fr-FR";
-        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDrM4d9ww8Ujmp1KczmBs5I4GLfeOHr7VcoGMPuJP7v0OenLq0232yNmcjCHOrfipvN/AHZclOSjt43Rgg0dl45awrkYefiiiAn4QKfVAEujSa9LcZxrnpacr4pQIxVzsKV/YN1rzBByJBInyCeN3s1FnOCwek67PQdFFJhrgN8obsNdYP1ME6O+jkydULy7QOwQHuM7Wccmjbpdp31Dbco3n8k+Dx7xZo+rmUXbhYtjMpbrgNcfkWxCf9WiA5isccdcgax0V7EEvSSjzYPU8EtXsymnjv+EYMMHv96w3uJAb4Cr6sMKZZDY5JyVaFp8D6KXGyvn+1VOf8Uxu4JPDoAqegajaAPn49yf4zRT+8+fH4QuVIlo6iH7oOUzhAtH+ByIUMPSG0A6vWNQENvelndJZtpg1rRaP00C6Ol7E9HS6VvzeyC5mbzUvjkaisviLxDGK8k4aMlj3HmAiMypsKOvT6xAjtxoBpxJeHROcKl2t4YrEVQAKex36hO1Atv6mx7JxP61DqwU2zSakMGjbNI8=";
+        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDqFK/F3VgzAtn7uzTOMrVQW8SWtEbstuXuabAGctFKk/FYYM5O+5z+cDYjta3AmdoFjrBZ0ChRbmzgsdTpKqmFQVRd3zFVrSCDQCyxhAUIzDonWgf2gMEqaphsE0fO+YaL7+7pU+AwO7/GEpXddp7IRnVWydpVgNzLeHaqmyiuaXQe35OEHzzzSKl0pu48vKc9JxotZHmDLBYSUxe+wSX1Qo1XO8zy0I2H6rTxkGJ7epRrh0kPWvBkwiIYZFanTNSCVDj9KCyYt9iH9a0eAIKxnBnUwtfER9QvTUiZyBYG74yNfUg0cdKorJX4/GxFeMnP1Pe3mcM4yMoD+9rsxeoTv1AzF1MBk58MoFuOWFK82419YPh6E1j1EnvRU1Zkhpj7cvKlVsOqzXX8kwQMWq3OY6Epkd2Zxj6QjuA5TpmOVvUZpilnohp9ZK4F0oAG4KZnLIFWpIJwu3GIntgsCMTy9p0S3RrwJraMKsyPhKswKOR8e90a90SfXSwzY+ocNdZmqL5WPQGDjod38Th5XTJxs=";
     </script>
     
     <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
